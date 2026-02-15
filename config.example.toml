@@ -1,0 +1,57 @@
+issuer = "https://auth.example.com"
+mode = "single" # "single" or "multi"
+
+[gateway]
+public_base_url = "https://auth.example.com"
+# Optional: override OIDC backchannel calls (discovery/token/jwks) to an internal URL.
+# oidc_internal_base_url = "http://pocket-id:1411"
+listen_addr = "0.0.0.0:8080"
+gateway_shared_secret_file = "/run/secrets/gateway_auth_secret"
+session_ttl_seconds = 43200
+login_ttl_seconds = 600
+cleanup_interval_seconds = 300
+max_sessions = 10000
+cookie_name = "pocket_shield_session"
+cookie_domain = ".example.com"
+scopes = ["openid", "email", "profile", "groups"]
+enable_pkce = true
+allowed_redirect_root_domain = ".example.com"
+safe_default_rd = "https://home.example.com/"
+logout_redirect = "https://home.example.com/"
+
+[single_client]
+client_id = "oidc-gw"
+client_secret_file = "/run/secrets/oidc_gw_secret"
+
+# Optional per-host authorization in single mode.
+# If a host is missing here and default_policy.allowed_groups is empty,
+# any authenticated user is allowed.
+[[host_policies]]
+host = "paperless.example.com"
+allowed_groups = ["paperless-users"]
+
+[[host_policies]]
+host = "immich.example.com"
+allowed_groups = ["immich-family"]
+
+[default_policy]
+# Empty means: allow any authenticated user for hosts without explicit policy.
+allowed_groups = []
+
+[rate_limit]
+login_per_minute = 60
+callback_per_minute = 60
+
+# Uncomment for multi mode.
+# mode = "multi"
+# [[multi_clients]]
+# host = "paperless.example.com"
+# client_id = "paperless"
+# client_secret_file = "/run/secrets/paperless_secret"
+# allowed_groups = ["paperless-users"]
+#
+# [[multi_clients]]
+# host = "immich.example.com"
+# client_id = "immich"
+# client_secret_file = "/run/secrets/immich_secret"
+# allowed_groups = ["immich-family"]

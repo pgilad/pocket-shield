@@ -1,0 +1,23 @@
+/target/
+
+# Local runtime configuration (keep example files committed)
+config.yaml
+config.yml
+config.json
+config.toml
+config.local.yaml
+config.local.yml
+config.local.json
+config.local.toml
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+
+# Editor/OS files
+.DS_Store
+.vscode/
+.idea/
