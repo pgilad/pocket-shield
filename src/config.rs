@@ -107,6 +107,20 @@ pub struct RuntimeConfig {
     /// Impact: throttles callback endpoint to reduce abuse/noise.
     /// Default: `60`.
     pub callback_rate_limit_per_minute: u32,
+    /// Log level used for successful `/verify` allow events.
+    /// Impact: controls verbosity of high-volume authorization success logs.
+    /// Default: `Info`.
+    pub allow_log_level: VerifyAllowLogLevel,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum VerifyAllowLogLevel {
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Off,
 }
 
 #[derive(Clone)]
@@ -167,6 +181,10 @@ struct FileConfig {
     /// Impact: protects login/callback endpoints from abuse.
     /// Default: `None` (both limits fall back to 60/minute).
     rate_limit: Option<RateLimitConfig>,
+    /// Logging-related configuration.
+    /// Impact: controls verbosity of selected application log events.
+    /// Default: `None` (logging options use built-in defaults).
+    logging: Option<LoggingConfig>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -295,6 +313,15 @@ struct RateLimitConfig {
     /// Impact: throttles callback processing traffic.
     /// Default: `None` (falls back to `60`).
     callback_per_minute: Option<u32>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct LoggingConfig {
+    /// Log level for successful `/verify` allow events.
+    /// Impact: reduces or increases volume of successful auth logs.
+    /// Accepted: `debug`, `info`, `warn`, `error`, `off`.
+    /// Default: `None` (falls back to `info`).
+    allow_log_level: Option<VerifyAllowLogLevel>,
 }
 
 impl RuntimeConfig {
@@ -448,6 +475,7 @@ impl RuntimeConfig {
             .join(" ");
 
         let rate_limit = parsed.rate_limit.unwrap_or_default();
+        let logging = parsed.logging.unwrap_or_default();
 
         Ok(Self {
             issuer,
@@ -485,6 +513,7 @@ impl RuntimeConfig {
             default_allowed_groups,
             login_rate_limit_per_minute: rate_limit.login_per_minute.unwrap_or(60),
             callback_rate_limit_per_minute: rate_limit.callback_per_minute.unwrap_or(60),
+            allow_log_level: logging.allow_log_level.unwrap_or(VerifyAllowLogLevel::Info),
         })
     }
 

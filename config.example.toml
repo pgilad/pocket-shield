@@ -42,6 +42,9 @@ allowed_groups = []
 login_per_minute = 60
 callback_per_minute = 60
 
+[logging]
+allow_log_level = "info" # debug|info|warn|error|off
+
 # Uncomment for multi mode.
 # mode = "multi"
 # [[multi_clients]]

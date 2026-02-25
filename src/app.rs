@@ -13,10 +13,10 @@ use cookie::{Cookie, SameSite};
 use serde::Deserialize;
 use subtle::ConstantTimeEq;
 use tower_http::trace::TraceLayer;
-use tracing::{info, warn};
+use tracing::{debug, error, info, warn};
 use url::Url;
 
-use crate::config::{Mode, RuntimeConfig};
+use crate::config::{Mode, RuntimeConfig, VerifyAllowLogLevel};
 use crate::models::{IdentityClaims, LoginTransaction};
 use crate::oidc::{OidcError, OidcManager};
 use crate::rate_limit::FixedWindowRateLimiter;
@@ -97,7 +97,7 @@ async fn verify_handler(State(state): State<AppState>, headers: HeaderMap) -> Re
 
     let mut response = StatusCode::NO_CONTENT.into_response();
     inject_identity_headers(response.headers_mut(), &claims);
-    info!(request_id = %request_id, host = %host, user = %claims.sub, outcome = "allow");
+    log_verify_allow(&state.config, &request_id, &host, &claims.sub);
     response
 }
 
@@ -325,6 +325,24 @@ fn oidc_error_response(error: OidcError) -> Response {
         | OidcError::NonceMismatch => "authentication failed",
     };
     (StatusCode::UNAUTHORIZED, message).into_response()
+}
+
+fn log_verify_allow(config: &RuntimeConfig, request_id: &str, host: &str, user: &str) {
+    match config.allow_log_level {
+        VerifyAllowLogLevel::Debug => {
+            debug!(request_id = %request_id, host = %host, user = %user, outcome = "allow");
+        }
+        VerifyAllowLogLevel::Info => {
+            info!(request_id = %request_id, host = %host, user = %user, outcome = "allow");
+        }
+        VerifyAllowLogLevel::Warn => {
+            warn!(request_id = %request_id, host = %host, user = %user, outcome = "allow");
+        }
+        VerifyAllowLogLevel::Error => {
+            error!(request_id = %request_id, host = %host, user = %user, outcome = "allow");
+        }
+        VerifyAllowLogLevel::Off => {}
+    }
 }
 
 fn redirect_to_login(public_base: &Url, rd: &str) -> Response {
