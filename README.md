@@ -116,7 +116,7 @@ docker run --rm -p 8080:8080 \
 - Session cookies are `Secure`, `HttpOnly`, and `SameSite=Lax`.
 - Identity headers are injected only after successful authentication and authorization.
 - Host-based authorization is enforced via `default_policy` and `host_policies`.
-- Login and callback endpoints are rate-limited by source IP.
+- Login and callback endpoints are rate-limited by source IP, with bounded in-memory limiter state.
 - OIDC discovery and JWKS are cached in memory; JWKS can refresh on `kid` miss.
 
 ## Configuration
@@ -133,6 +133,7 @@ mode = "single"
 public_base_url = "https://auth.example.com"
 gateway_shared_secret_file = "/run/secrets/gateway_auth_secret"
 cookie_domain = ".example.com"
+max_login_states = 10000
 allowed_redirect_root_domain = ".example.com"
 
 [single_client]

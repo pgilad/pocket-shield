@@ -62,14 +62,16 @@ async fn main() -> Result<()> {
     )?;
 
     let sessions = Arc::new(SessionStore::new(config.session_ttl, config.max_sessions));
-    let login_states = Arc::new(LoginStateStore::new());
+    let login_states = Arc::new(LoginStateStore::new(config.max_login_states));
     let login_rate_limiter = Arc::new(FixedWindowRateLimiter::new(
         config.login_rate_limit_per_minute as usize,
         Duration::from_secs(60),
+        config.max_rate_limit_keys,
     ));
     let callback_rate_limiter = Arc::new(FixedWindowRateLimiter::new(
         config.callback_rate_limit_per_minute as usize,
         Duration::from_secs(60),
+        config.max_rate_limit_keys,
     ));
 
     spawn_cleanup_task(

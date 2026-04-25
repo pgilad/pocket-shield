@@ -68,17 +68,36 @@ impl SessionStore {
 
 pub struct LoginStateStore {
     inner: RwLock<HashMap<String, LoginTransaction>>,
+    max_states: usize,
 }
 
 impl LoginStateStore {
-    pub fn new() -> Self {
+    pub fn new(max_states: usize) -> Self {
         Self {
             inner: RwLock::new(HashMap::new()),
+            max_states,
         }
     }
 
     pub async fn insert(&self, state: String, tx: LoginTransaction) {
-        self.inner.write().await.insert(state, tx);
+        let mut guard = self.inner.write().await;
+
+        if guard.len() >= self.max_states {
+            sweep_expired_login_states(&mut guard);
+        }
+
+        if guard.len() >= self.max_states
+            && let Some(oldest_key) = guard
+                .iter()
+                .min_by_key(|(_, tx)| tx.expires_at)
+                .map(|(key, _)| key.clone())
+        {
+            guard.remove(&oldest_key);
+        }
+
+        if guard.len() < self.max_states {
+            guard.insert(state, tx);
+        }
     }
 
     pub async fn take_valid(&self, state: &str) -> Option<LoginTransaction> {
@@ -92,8 +111,70 @@ impl LoginStateStore {
     }
 
     pub async fn sweep_expired(&self) {
-        let now = Instant::now();
         let mut guard = self.inner.write().await;
-        guard.retain(|_, tx| tx.expires_at > now);
+        sweep_expired_login_states(&mut guard);
+    }
+}
+
+fn sweep_expired_login_states(states: &mut HashMap<String, LoginTransaction>) {
+    let now = Instant::now();
+    states.retain(|_, tx| tx.expires_at > now);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn login_tx(expires_at: Instant) -> LoginTransaction {
+        LoginTransaction {
+            nonce: "nonce".to_string(),
+            pkce_verifier: None,
+            rd: "https://app.example.com/".to_string(),
+            client_key: "single".to_string(),
+            expires_at,
+        }
+    }
+
+    #[tokio::test]
+    async fn login_state_store_evicts_oldest_when_full() {
+        let store = LoginStateStore::new(2);
+        let now = Instant::now();
+
+        store
+            .insert("old".to_string(), login_tx(now + Duration::from_secs(10)))
+            .await;
+        store
+            .insert("new".to_string(), login_tx(now + Duration::from_secs(20)))
+            .await;
+        store
+            .insert("newer".to_string(), login_tx(now + Duration::from_secs(30)))
+            .await;
+
+        assert!(store.take_valid("old").await.is_none());
+        assert!(store.take_valid("new").await.is_some());
+        assert!(store.take_valid("newer").await.is_some());
+    }
+
+    #[tokio::test]
+    async fn login_state_store_sweeps_expired_before_evicting() {
+        let store = LoginStateStore::new(2);
+        let now = Instant::now();
+
+        store
+            .insert(
+                "expired".to_string(),
+                login_tx(now - Duration::from_secs(1)),
+            )
+            .await;
+        store
+            .insert("valid".to_string(), login_tx(now + Duration::from_secs(20)))
+            .await;
+        store
+            .insert("new".to_string(), login_tx(now + Duration::from_secs(30)))
+            .await;
+
+        assert!(store.take_valid("expired").await.is_none());
+        assert!(store.take_valid("valid").await.is_some());
+        assert!(store.take_valid("new").await.is_some());
     }
 }

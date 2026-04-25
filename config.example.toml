@@ -11,6 +11,7 @@ session_ttl_seconds = 43200
 login_ttl_seconds = 600
 cleanup_interval_seconds = 300
 max_sessions = 10000
+max_login_states = 10000
 cookie_name = "pocket_shield_session"
 cookie_domain = ".example.com"
 scopes = ["openid", "email", "profile", "groups"]
@@ -41,6 +42,7 @@ allowed_groups = []
 [rate_limit]
 login_per_minute = 60
 callback_per_minute = 60
+max_keys = 10000
 
 [logging]
 allow_log_level = "info" # debug|info|warn|error|off

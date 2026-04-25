@@ -59,6 +59,10 @@ pub struct RuntimeConfig {
     /// Impact: bounds memory usage and can evict older sessions when pressure increases.
     /// Default: `10_000`.
     pub max_sessions: usize,
+    /// Soft cap on number of in-progress login transactions retained in memory.
+    /// Impact: bounds memory usage from started but unfinished login flows.
+    /// Default: `10_000`.
+    pub max_login_states: usize,
     /// Space-delimited OAuth scopes requested during login.
     /// Impact: determines claims/permissions available in returned tokens.
     /// Default: `"openid email profile groups"`.
@@ -107,6 +111,10 @@ pub struct RuntimeConfig {
     /// Impact: throttles callback endpoint to reduce abuse/noise.
     /// Default: `60`.
     pub callback_rate_limit_per_minute: u32,
+    /// Maximum number of source keys tracked by each rate limiter.
+    /// Impact: bounds memory usage from high-cardinality/spoofed source identifiers.
+    /// Default: `10_000`.
+    pub max_rate_limit_keys: usize,
     /// Log level used for successful `/verify` allow events.
     /// Impact: controls verbosity of high-volume authorization success logs.
     /// Default: `Info`.
@@ -221,6 +229,10 @@ struct GatewayConfig {
     /// Impact: bounds in-memory session storage.
     /// Default: `10_000`.
     max_sessions: Option<usize>,
+    /// Maximum in-progress login transactions retained.
+    /// Impact: bounds in-memory login state storage.
+    /// Default: `10_000`.
+    max_login_states: Option<usize>,
     /// Cookie domain suffix.
     /// Impact: defines host scope for session cookie delivery.
     /// Default: `".example.com"`.
@@ -313,6 +325,10 @@ struct RateLimitConfig {
     /// Impact: throttles callback processing traffic.
     /// Default: `None` (falls back to `60`).
     callback_per_minute: Option<u32>,
+    /// Maximum source keys tracked by each endpoint limiter.
+    /// Impact: bounds memory usage from spoofed or high-cardinality sources.
+    /// Default: `None` (falls back to `10_000`).
+    max_keys: Option<usize>,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -474,7 +490,24 @@ impl RuntimeConfig {
             })
             .join(" ");
 
+        let max_sessions = parsed.gateway.max_sessions.unwrap_or(10_000);
+        if max_sessions == 0 {
+            bail!("gateway.max_sessions must be greater than 0");
+        }
+
+        let max_login_states = parsed.gateway.max_login_states.unwrap_or(10_000);
+        if max_login_states == 0 {
+            bail!("gateway.max_login_states must be greater than 0");
+        }
+
         let rate_limit = parsed.rate_limit.unwrap_or_default();
+        let login_rate_limit_per_minute = rate_limit.login_per_minute.unwrap_or(60);
+        let callback_rate_limit_per_minute = rate_limit.callback_per_minute.unwrap_or(60);
+        let max_rate_limit_keys = rate_limit.max_keys.unwrap_or(10_000);
+        if max_rate_limit_keys == 0 {
+            bail!("rate_limit.max_keys must be greater than 0");
+        }
+
         let logging = parsed.logging.unwrap_or_default();
 
         Ok(Self {
@@ -500,7 +533,8 @@ impl RuntimeConfig {
             cleanup_interval: Duration::from_secs(
                 parsed.gateway.cleanup_interval_seconds.unwrap_or(300),
             ),
-            max_sessions: parsed.gateway.max_sessions.unwrap_or(10_000),
+            max_sessions,
+            max_login_states,
             scopes,
             enable_pkce: parsed.gateway.enable_pkce.unwrap_or(true),
             allowed_redirect_root_domain,
@@ -511,8 +545,9 @@ impl RuntimeConfig {
             clients_by_host,
             host_allowed_groups,
             default_allowed_groups,
-            login_rate_limit_per_minute: rate_limit.login_per_minute.unwrap_or(60),
-            callback_rate_limit_per_minute: rate_limit.callback_per_minute.unwrap_or(60),
+            login_rate_limit_per_minute,
+            callback_rate_limit_per_minute,
+            max_rate_limit_keys,
             allow_log_level: logging.allow_log_level.unwrap_or(VerifyAllowLogLevel::Info),
         })
     }
