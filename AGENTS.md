@@ -14,7 +14,7 @@ Core code lives in `src/` and is split by responsibility: `main.rs` boots the se
 - `cargo deny check`: validate dependency/license policy from `deny.toml`.
 
 ## Coding Style & Naming Conventions
-Use Rust 2024 edition (`Cargo.toml`) with toolchain pinned in `mise.toml` (`rust = "1.95.0"`). Follow `rustfmt` defaults (4-space indentation). Use `snake_case` for files/modules/functions, `UpperCamelCase` for types/traits, and `UPPER_SNAKE_CASE` for constants. Prefer explicit error context (`anyhow::Context`) and avoid outbound I/O on the `/verify` hot path.
+Use Rust 2024 edition (`Cargo.toml`) with toolchain pinned in `mise.toml` (`rust = "1.99.1"`). Follow `rustfmt` defaults (4-space indentation). Use `snake_case` for files/modules/functions, `UpperCamelCase` for types/traits, and `UPPER_SNAKE_CASE` for constants. Prefer explicit error context (`anyhow::Context`) and avoid outbound I/O on the `/verify` hot path.
 
 ## Testing Guidelines
 Place integration tests in `tests/` (see `specs/cli-test-plan.md` for expected layout and scenarios). Name tests by behavior, e.g. `verify_redirects_when_session_missing`. Cover both happy and failure paths (authorization failures, token validation failures, rate-limit edges). For auth-flow changes, add at least one end-to-end login/verify assertion and run `cargo test` before opening a PR.

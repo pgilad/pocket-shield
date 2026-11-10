@@ -2,27 +2,27 @@
 name = "pocket-shield"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.95.0"
+rust-version = "1.99.1"
 publish = false
 
 [dependencies]
 anyhow = "1.0"
 axum = { version = "0.8", features = ["macros"] }
-base64 = "0.22"
-clap = { version = "4.5", features = ["derive", "env"] }
+base64 = "0.23"
+clap = { version = "4.6", features = ["derive", "env"] }
 cookie = "0.18"
-jsonwebtoken = { version = "10.3", default-features = false, features = ["aws_lc_rs"] }
+jsonwebtoken = { version = "11.1", default-features = false, features = ["aws_lc_rs"] }
 rand = "0.10"
 reqwest = { version = "0.13", default-features = false, features = ["json", "form", "rustls"] }
 serde = { version = "1.0", features = ["derive"] }
+serde-saphyr = { version = "2.1", default-features = false, features = ["deserialize"] }
 serde_json = "1.0"
-serde_yaml = "0.9"
-sha2 = "0.10"
+sha2 = "0.11"
 subtle = "2.6"
 thiserror = "2.0"
-toml = "1.0"
-tokio = { version = "1.44", features = ["macros", "rt-multi-thread", "signal", "time", "net"] }
-tower-http = { version = "0.6", features = ["trace"] }
+toml = "1.2"
+tokio = { version = "1.54", features = ["macros", "rt-multi-thread", "signal", "time", "net"] }
+tower-http = { version = "0.7", features = ["trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 url = "2.5"

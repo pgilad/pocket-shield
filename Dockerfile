@@ -1,4 +1,4 @@
-FROM rust:1.95.0-slim-trixie AS chef
+FROM rust:1.99.1-slim-trixie AS chef
 
 WORKDIR /app
 RUN cargo install --locked cargo-chef
