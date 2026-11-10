@@ -96,7 +96,7 @@ docker build -t pocket-shield:local .
 
 The source repository is [pgilad/pocket-shield on GitHub](https://github.com/pgilad/pocket-shield).
 
-GitHub Actions builds both platforms for pull requests. Changes to application code, dependencies, the example config, or container build files on `main` build and publish both platforms to Docker Hub. Each release has a dated tag in `YYYY.MM.DD.HHMMSS` format based on the commit time in UTC, and updates `latest`. Publishing skips a dated tag that already exists. The publish workflow can also be started manually.
+GitHub Actions builds both platforms for pull requests. Changes to application code, dependencies, the example config, or container build files on `main` build and publish both platforms to Docker Hub. Each platform builds on a native runner. Publishing combines the images after both builds pass. Each release has a dated tag in `YYYY.MM.DD.HHMMSS` format based on the commit time in UTC, and updates `latest`. Publishing skips a dated tag that already exists. The publish workflow can also be started manually.
 
 The publish workflow needs the repository variable `DOCKERHUB_USERNAME` and repository secret `DOCKERHUB_TOKEN`. The token must allow writes to `pgilad/pocket-shield`.
 
