@@ -1,0 +1,48 @@
+name: Build container image
+
+on:
+  pull_request:
+    paths:
+      - src/**
+      - Cargo.toml
+      - Cargo.lock
+      - mise.toml
+      - config.example.toml
+      - Dockerfile
+      - docker-bake.hcl
+      - .dockerignore
+      - .github/workflows/*.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            cache: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            cache: arm64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4.4.1
+
+      - name: Build image
+        uses: docker/bake-action@v7.5.0
+        with:
+          push: false
+          set: |
+            release.platform=${{ matrix.platform }}
+            release.cache-from=type=gha,scope=build-${{ matrix.cache }}
+            release.cache-to=type=gha,scope=build-${{ matrix.cache }},mode=max

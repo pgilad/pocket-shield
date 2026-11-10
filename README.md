@@ -9,6 +9,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT" /></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/rust-1.99.1-orange.svg" alt="Rust 1.99.1" /></a>
+  <a href="https://hub.docker.com/r/pgilad/pocket-shield"><img src="https://img.shields.io/badge/docker-multi--arch-2496ED.svg" alt="Docker multi-arch" /></a>
 </p>
 
 Minimal OIDC gateway for Caddy-backed apps.
@@ -67,20 +68,42 @@ If `--config` and `POCKET_SHIELD_CONFIG` are both omitted, default path is `conf
 
 ## Docker
 
-Build:
+Published images are available on [Docker Hub](https://hub.docker.com/r/pgilad/pocket-shield) for `linux/amd64` and `linux/arm64`.
 
-```bash
-docker build -t pocket-shield:local .
+Pull:
+
+```fish
+docker pull docker.io/pgilad/pocket-shield:latest
 ```
 
 Run:
 
-```bash
+```fish
 docker run --rm -p 8080:8080 \
-  -v "$(pwd)/config.toml:/config.toml:ro" \
-  -v "$(pwd)/secrets:/run/secrets:ro" \
+  -v "$PWD/config.toml:/config.toml:ro" \
+  -v "$PWD/secrets:/run/secrets:ro" \
   -e POCKET_SHIELD_CONFIG=/config.toml \
-  pocket-shield:local
+  docker.io/pgilad/pocket-shield:latest
+```
+
+To build locally:
+
+```fish
+docker build -t pocket-shield:local .
+```
+
+### Automatic publishing
+
+The source repository is [pgilad/pocket-shield on GitHub](https://github.com/pgilad/pocket-shield).
+
+GitHub Actions builds both platforms for pull requests. Changes to application code, dependencies, the example config, or container build files on `main` build and publish both platforms to Docker Hub. Each release has a dated tag in `YYYY.MM.DD.HHMMSS` format based on the commit time in UTC, and updates `latest`. Publishing skips a dated tag that already exists. The publish workflow can also be started manually.
+
+The publish workflow needs the repository variable `DOCKERHUB_USERNAME` and repository secret `DOCKERHUB_TOKEN`. The token must allow writes to `pgilad/pocket-shield`.
+
+To build and publish manually:
+
+```fish
+docker buildx bake --push
 ```
 
 ## Workflow

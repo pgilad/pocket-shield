@@ -1,10 +1,17 @@
-group "default" {
-  targets = ["release"]
+variable "IMAGE" {
+  default = "docker.io/pgilad/pocket-shield"
 }
 
-function "calver_tag" {
-  params = [ts]
-  result = formatdate("YYYY.MM.DD.hhmmss", ts)
+variable "TAG" {
+  default = formatdate("YYYY.MM.DD.hhmmss", timestamp())
+}
+
+variable "REVISION" {
+  default = ""
+}
+
+group "default" {
+  targets = ["release"]
 }
 
 target "release" {
@@ -12,7 +19,8 @@ target "release" {
   dockerfile = "Dockerfile"
   platforms  = ["linux/amd64", "linux/arm64"]
   tags       = [
-    format("pgilad/pocket-shield:%s", calver_tag(timestamp()))
+    "${IMAGE}:${TAG}",
+    "${IMAGE}:latest",
   ]
 
   attest = [
@@ -21,9 +29,8 @@ target "release" {
   ]
 
   labels = {
-     "org.opencontainers.image.source" = "https://codeberg.org/pgilad/pocket-shield"
-     "org.opencontainers.image.created" = timestamp()
-   }
-
-  output = ["type=registry"]
+    "org.opencontainers.image.source"   = "https://github.com/pgilad/pocket-shield"
+    "org.opencontainers.image.created"  = timestamp()
+    "org.opencontainers.image.revision" = REVISION
+  }
 }
